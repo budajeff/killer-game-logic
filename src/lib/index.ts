@@ -1,14 +1,13 @@
 import "./index.css";
 
-class MyLibrary {
+class KillerGameLogic {
   constructor() {
-    console.log("Library constructor loaded");
+    console.log("KillerGameLogic constructor loaded");
   }
 
-  myMethod = (): boolean => {
-    console.log("Library method fired");
-    return true;
+  statusCheck = (): string => {
+    return 'ok';
   };
 }
 
-export default MyLibrary;
+export default KillerGameLogic;

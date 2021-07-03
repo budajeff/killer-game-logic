@@ -1,6 +1,6 @@
 import "./index.css";
-declare class MyLibrary {
+declare class KillerGameLogic {
     constructor();
     myMethod: () => boolean;
 }
-export default MyLibrary;
+export default KillerGameLogic;

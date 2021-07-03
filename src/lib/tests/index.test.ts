@@ -1,5 +1,9 @@
-import MyLibrary from '../index';
+import KillerGameLogic from '../index';
 
-it('Runs without crashing', () => {
-  new MyLibrary();
+describe('Runs without crashing', () => {
+  const lib = new KillerGameLogic();
+
+  test('statusCheck() function', () => {
+    expect(lib.statusCheck()).toBe('ok');
+  });
 });
