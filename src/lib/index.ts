@@ -1,7 +1,27 @@
 import "./index.css";
 
-export enum Suit { Hearts, Diamonds, Clubs, Spades }
-export enum Rank { Two, Ace, King, Queen, Jack, Ten, Nine, Eight, Seven, Six, Five, Four, Three }
+export enum Suit {
+  Hearts = 'hearts',
+  Diamonds = 'diamonds',
+  Clubs = 'clubs',
+  Spades = 'spades'
+}
+
+export enum Rank {
+  Two = 13, //twos are high in this game
+  Ace = 12,
+  King = 11,
+  Queen = 10,
+  Jack = 9,
+  Ten = 8,
+  Nine = 7,
+  Eight = 6,
+  Seven = 5,
+  Six = 4,
+  Five = 3,
+  Four = 2,
+  Three = 1
+}
 
 export enum CardSequenceKind {
   None = 'none',
@@ -27,7 +47,7 @@ export enum CardSequenceKind {
   RunOfFourPairs = 'run of four pairs',
   RunOfFivePairs = 'run of five pairs',
   RunOfSixPairs = 'run of six pairs',
- 
+
   RunOfThreeTriples = 'run of three triples',
   RunOfFourTriples = 'run of four triples',
 }
@@ -39,7 +59,13 @@ export class Play {
   }
 }
 export class Card {
-  constructor(public suit: Suit, public rank: Rank) { }
+  constructor(
+    public rank: Rank = Rank.Ace,
+    public suit: Suit = Suit.Hearts) { }
+
+  toString() {
+    return `${this.rank} of ${this.suit}`;
+  }
 }
 
 /**  */
@@ -129,19 +155,6 @@ export function createDeck(): Deck {
   return deck;
 }
 
-// export function groupBy(groupBy:string, cards: Card[]): 
-// Record<CardSequenceKind, Card[]>[] {
-//   const grouped:{key:string, cards:Card[]} = undefined;
-//   cards.forEach(card => {
-//     const groupId = card[groupBy];
-//     if(!grouped[groupId]) {
-//       grouped[groupId] = [];
-//     }
-//     grouped[groupId].push(card);
-//   });
-//   return grouped;
-// }
-
 export function getPlayersCards(players: Player[]) {
   return players.map(p => p.cards).reduce((all, current) => [...all, ...current]);
 }
@@ -153,21 +166,25 @@ export function getNextPlayer(current: Player, players: Player[]) {
   return index === players.length - 1 ? players[0] : players[index + 1];
 }
 
-export function findOfAKindSequence(cards: CardSequence, count: number): 
-Record<CardSequenceKind, CardSequence[]> {
-  const sorted = [...cards];
-  const groupByRank = groupBy('rank', sorted);
-  return groupByRank.map(g => {});
-}
+export function findRuns(cards: CardSequence): CardSequence[] {
+  const sorted = [...cards].sort(orderByCardRank);
+  let currentSeq: CardSequence = [];
+  const sequences: CardSequence[] = [currentSeq];
+  sorted.forEach(card => {
+    if (currentSeq.length === 0 ||
+      currentSeq[currentSeq.length-1].rank + 1 === card.rank) {
+      //theres no current sequence
+      //or the card does sequentially follows the curr seq
+      currentSeq.push(card);
+    } else {
+      // current sequence is broken, add it to the return list
+      sequences.push(currentSeq);
 
-// export function findRuns(cards: CardSequence) : CardSequence[] {
-
-// }
-
-export function getSequenceKind(cards: CardSequence): CardSequenceKind {
-
-  // TODO: implement this
-  return CardSequenceKind.None;
+      // current card is start of new sequence
+      currentSeq = [card];
+    }
+  });
+  return sequences;
 }
 
 function removeCardsFromPlayer(player: Player, cards: CardSequence): CardSequence {
