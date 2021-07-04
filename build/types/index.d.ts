@@ -1,6 +1,6 @@
 import "./index.css";
 declare class KillerGameLogic {
     constructor();
-    myMethod: () => boolean;
+    statusCheck: () => string;
 }
 export default KillerGameLogic;
