@@ -4,28 +4,32 @@ export enum Suit { Hearts, Diamonds, Clubs, Spades }
 export enum Rank { Two, Ace, King, Queen, Jack, Ten, Nine, Eight, Seven, Six, Five, Four, Three }
 
 export enum CardSequenceKind {
-  None,
+  None = 'none',
 
-  OneOfAKind,
-  TwoOfAKind,
-  ThreeOfAKind,
-  FourOfAKind,
+  OneOfAKind = 'one of a kind',
+  TwoOfAKind = 'two of a kind',
+  ThreeOfAKind = 'three of a kind',
+  FourOfAKind = 'four of a kind',
 
-  RunOfThree,
-  RunOfFour,
-  RunOfFive,
-  RunOfSix,
-  RunOfSeven,
-  RunOfEight,
-  RunOfNine,
-  RunOfTen,
-  RunOfEleven,
-  RunOfTwelve,
-  RunOfThirteen,
+  RunOfThree = 'run of three',
+  RunOfFour = 'run of four',
+  RunOfFive = 'run of five',
+  RunOfSix = 'run of six',
+  RunOfSeven = 'run of seven',
+  RunOfEight = 'run of eight',
+  RunOfNine = 'run of nine',
+  RunOfTen = 'run of ten',
+  RunOfEleven = 'run of eleven',
+  RunOfTwelve = 'run of twelve',
+  RunOfThirteen = 'run of thirteen',
 
-  RunOfPairs,
-  RunOfThreeOfAKind,
-  RunOfFourOfAKind
+  RunOfThreePairs = 'run of three pairs',
+  RunOfFourPairs = 'run of four pairs',
+  RunOfFivePairs = 'run of five pairs',
+  RunOfSixPairs = 'run of six pairs',
+ 
+  RunOfThreeTriples = 'run of three triples',
+  RunOfFourTriples = 'run of four triples',
 }
 
 export class Play {
@@ -44,7 +48,10 @@ export type CardSequence = Card[];
 export type Deck = Card[];
 export type DiscardPile = Card[];
 export class Player {
-  constructor(public name = 'player', public order: number, public cards: Card[] = undefined) { }
+  constructor(
+    public name = 'player',
+    public order: number = 0,
+    public cards: Card[] = undefined) { }
 }
 export class Round {
   constructor(
@@ -65,14 +72,12 @@ export class GameState {
   }
 }
 
-function sortByRank(cards: CardSequence) {
-  cards.sort((a, b) => {
-    if (a.rank > b.rank)
-      return 1;
-    else if (a.rank < b.rank)
-      return -1;
-    return 0;
-  });
+function orderByCardRank(a: Card, b: Card) {
+  if (a.rank > b.rank)
+    return 1;
+  else if (a.rank < b.rank)
+    return -1;
+  return 0;
 }
 
 function orderByPlayerOrder(a: Player, b: Player) {
@@ -83,9 +88,59 @@ function orderByPlayerOrder(a: Player, b: Player) {
   return 0;
 }
 
+function shuffle(array: any[]) {
+  let currentIndex = array.length;
+  let randomIndex;
 
-export function findOfAKindSequence(cards: CardSequence): CardSequence[] {
+  // While there remain elements to shuffle...
+  while (0 !== currentIndex) {
+
+    // Pick a remaining element...
+    randomIndex = Math.floor(Math.random() * currentIndex);
+    currentIndex--;
+
+    // And swap it with the current element.
+    [array[currentIndex], array[randomIndex]] = [
+      array[randomIndex], array[currentIndex]];
+  }
+
+  return array;
 }
+
+function dealCards(deck: Deck, players: Player[]) {
+  if (players.length > 4 || players.length < 2) {
+    throw new Error('invalid Player length');
+  }
+  shuffle(deck);
+  players.forEach(player => player.cards = deck.splice(0, 13));
+}
+
+function enumKeys<O extends Record<string, unknown>, K extends keyof O = keyof O>(obj: O): K[] {
+  return Object.keys(obj).filter(k => Number.isNaN(+k)) as K[];
+}
+
+export function createDeck(): Deck {
+  const deck = [];
+  for (const suit of enumKeys(Suit)) {
+    for (const rank of enumKeys(Rank)) {
+      deck.push({ suit: Suit[suit], rank: Rank[rank] });
+    }
+  }
+  return deck;
+}
+
+// export function groupBy(groupBy:string, cards: Card[]): 
+// Record<CardSequenceKind, Card[]>[] {
+//   const grouped:{key:string, cards:Card[]} = undefined;
+//   cards.forEach(card => {
+//     const groupId = card[groupBy];
+//     if(!grouped[groupId]) {
+//       grouped[groupId] = [];
+//     }
+//     grouped[groupId].push(card);
+//   });
+//   return grouped;
+// }
 
 export function getPlayersCards(players: Player[]) {
   return players.map(p => p.cards).reduce((all, current) => [...all, ...current]);
@@ -97,6 +152,17 @@ export function getNextPlayer(current: Player, players: Player[]) {
   if (index === -1) throw new Error('Player not found');
   return index === players.length - 1 ? players[0] : players[index + 1];
 }
+
+export function findOfAKindSequence(cards: CardSequence, count: number): 
+Record<CardSequenceKind, CardSequence[]> {
+  const sorted = [...cards];
+  const groupByRank = groupBy('rank', sorted);
+  return groupByRank.map(g => {});
+}
+
+// export function findRuns(cards: CardSequence) : CardSequence[] {
+
+// }
 
 export function getSequenceKind(cards: CardSequence): CardSequenceKind {
 
@@ -115,7 +181,22 @@ function removeCardsFromPlayer(player: Player, cards: CardSequence): CardSequenc
   return cards;
 }
 
-export function transitionState(current: GameState, command: Play): GameState {
+export function transitionState(current: GameState = undefined, command: Play = undefined): GameState {
+  if (!current) {
+    // no previous state so generate a new game
+    const players = [new Player('a', 0), new Player('a', 1), new Player('a', 2), new Player('a', 3)];
+    const nextState: GameState = {
+      error: '',
+      discardPile: [],
+      currentPlayer: players[0],
+      playersIn: players,
+      playersOut: [],
+      message: `New Game! Waiting on ${players[0]}`
+    };
+    dealCards(createDeck(), nextState.playersIn);
+    return nextState;
+  }
+
   if (current.currentPlayer !== command.player) {
     return { ...current, error: `It is not ${command.player.name}'s turn. It is ${current.currentPlayer.name}'s turn.` }
   }
@@ -174,78 +255,3 @@ export function transitionState(current: GameState, command: Play): GameState {
   return nextState;
 }
 
-const nextState = {
-  ...current,
-
-
-  error: '',
-};
-}
-
-
-export class KillerGameLogic {
-  constructor() {
-    console.log("KillerGameLogic constructor loaded");
-  }
-
-  statusCheck = (): string => {
-    return "ok";
-  };
-
-  private enumKeys<O extends Record<string, unknown>, K extends keyof O = keyof O>(obj: O): K[] {
-    return Object.keys(obj).filter(k => Number.isNaN(+k)) as K[];
-  }
-
-  public createDeck(): Deck {
-    const deck = [];
-    for (const suit of this.enumKeys(Suit)) {
-      for (const rank of this.enumKeys(Rank)) {
-        deck.push({ suit: Suit[suit], rank: Rank[rank] });
-      }
-    }
-    return deck;
-  }
-
-  private shuffle(array: any[]) {
-    let currentIndex = array.length;
-    let randomIndex;
-
-    // While there remain elements to shuffle...
-    while (0 !== currentIndex) {
-
-      // Pick a remaining element...
-      randomIndex = Math.floor(Math.random() * currentIndex);
-      currentIndex--;
-
-      // And swap it with the current element.
-      [array[currentIndex], array[randomIndex]] = [
-        array[randomIndex], array[currentIndex]];
-    }
-
-    return array;
-  }
-
-  public dealCards(deck: Deck, players: Player[]) {
-    if (players.length > 4 || players.length < 2) {
-      throw new Error('invalid Player length');
-    }
-    this.shuffle(deck);
-    players.forEach(player => player.cards = deck.splice(0, 13));
-  }
-
-  private findFirstPlayer(players: Player[]): Player {
-    const threeClubs = new Card(Suit.Clubs, Rank.Three);
-    return players.find(p => p.cards.find(
-      c => c.rank === threeClubs.rank && c.suit === threeClubs.suit))
-  }
-
-  // public createFirstRound(prev: Round): Round {
-  //   // shuffle players
-  //   // 
-  //   return {
-  //     cards
-  //   }
-  // }
-
-
-}
