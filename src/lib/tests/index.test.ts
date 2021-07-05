@@ -1,4 +1,4 @@
-import { transitionState, Card, Deck, Rank, Suit, Player, createDeck, CardSequence, findRuns } from '../index';
+import { transitionState, Card, Deck, Rank, Suit, Player, createDeck, CardSequence, findRuns, Play, orderBy } from '../index';
 
 describe('createDeck()', () => {
   it('makes a deck of 52 cards', () => {
@@ -16,21 +16,30 @@ describe('transition()', () => {
     expect(s.message).toBeTruthy();
     s.playersIn.forEach(p => expect(p.cards.length).toBe(13));
   });
+  it('accepts the first players play', () => {
+    const state = transitionState();
+    const play = findRuns(state.currentPlayer.cards)
+      .sort(orderBy('length', false))[0];
+    const newState = transitionState(
+      state,
+      new Play(state.currentPlayer, play));
+      expect(newState.error).toBeFalsy();
+  });
+});
 
-  describe('findRuns()', () => {
-    it('can find a run of three cards', () => {
-      const cards: CardSequence = [
-        new Card(Rank.Seven),
-        new Card(Rank.Nine),
-        new Card(Rank.Eight),
-      ];
+describe('findRuns()', () => {
+  it('can find a run of three cards', () => {
+    const cards: CardSequence = [
+      new Card(Rank.Seven),
+      new Card(Rank.Nine),
+      new Card(Rank.Eight),
+    ];
 
-      const runs = findRuns(cards);
-      console.log(runs);
-      expect(runs.length).toBe(1);
-      expect(runs[0].length).toBe(3);
-      expect(runs[0].map(c => c.rank)).toContain(Rank.Seven);
+    const runs = findRuns(cards);
+    console.log(runs);
+    expect(runs.length).toBe(1);
+    expect(runs[0].length).toBe(3);
+    expect(runs[0].map(c => c.rank)).toContain(Rank.Seven);
 
-    });
   });
 });
