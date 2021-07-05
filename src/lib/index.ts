@@ -54,11 +54,7 @@ export enum CardSequenceKind {
 
 export class Play {
   /** @description falsy cards indicates player passes */
-  constructor(
-    public player: Player,
-    public cards: CardSequence = undefined) {
-
-  }
+  constructor(public player: Player, public cards: CardSequence = undefined) {}
 }
 export class Card {
   constructor(public rank: Rank = Rank.Ace, public suit: Suit = Suit.Hearts) {}
@@ -77,7 +73,8 @@ export class Player {
   constructor(
     public name = "player",
     public order: number = 0,
-    public cards: Card[] = undefined) { }
+    public cards: Card[] = undefined
+  ) {}
 
   public toString() {
     return `Player ${this.name} with ${this?.cards?.length} cards remaining`;
@@ -117,12 +114,10 @@ function orderByPlayerOrder(a: Player, b: Player) {
 
 export function orderBy(orderByProp: string, asc = true) {
   return (a: any, b: any) => {
-    if (a[orderByProp] > b[orderByProp])
-      return asc ? 1 : -1;
-    else if (a[orderByProp] < b[orderByProp])
-      return asc ? -1 : 1;
+    if (a[orderByProp] > b[orderByProp]) return asc ? 1 : -1;
+    else if (a[orderByProp] < b[orderByProp]) return asc ? -1 : 1;
     return 0;
-  }
+  };
 }
 
 function shuffle(array: any[]) {
@@ -189,8 +184,10 @@ export function findOfAKinds(cards: CardSequence): CardSequence[] {
   const sequences: CardSequence[] = [currentSeq];
   while (sorted.length > 0) {
     const card = sorted.shift();
-    if (currentSeq.length === 0 ||
-      currentSeq[currentSeq.length - 1].rank === card.rank) {
+    if (
+      currentSeq.length === 0 ||
+      currentSeq[currentSeq.length - 1].rank === card.rank
+    ) {
       currentSeq.push(card);
     } else {
       currentSeq = [card];
@@ -204,9 +201,11 @@ export function findRuns(cards: CardSequence): CardSequence[] {
   const sorted = [...cards].sort(orderByCardRank);
   let currentSeq: CardSequence = [];
   const sequences: CardSequence[] = [currentSeq];
-  sorted.forEach(card => {
-    if (currentSeq.length === 0 ||
-      currentSeq[currentSeq.length - 1].rank + 1 === card.rank) {
+  sorted.forEach((card) => {
+    if (
+      currentSeq.length === 0 ||
+      currentSeq[currentSeq.length - 1].rank + 1 === card.rank
+    ) {
       //theres no current sequence
       //or the card does sequentially follows the curr seq
       currentSeq.push(card);
@@ -239,7 +238,12 @@ export function transitionState(
 ): GameState {
   if (!current) {
     // no previous state so generate a new game
-    const players = [new Player('A', 0), new Player('B', 1), new Player('C', 2), new Player('D', 3)];
+    const players = [
+      new Player("A", 0),
+      new Player("B", 1),
+      new Player("C", 2),
+      new Player("D", 3),
+    ];
     const nextState: GameState = {
       error: "",
       discardPile: [],
@@ -269,7 +273,10 @@ export function transitionState(
     };
 
     // current player is the next player of the remaining players in the round
-    nextState.currentPlayer = getNextPlayer(command.player, [command.player, ...nextState.playersIn]);
+    nextState.currentPlayer = getNextPlayer(command.player, [
+      command.player,
+      ...nextState.playersIn,
+    ]);
 
     nextState.message = `${command.player.name} passes. Waiting on ${nextState.currentPlayer.name}`;
     return nextState;
@@ -314,11 +321,14 @@ export function transitionState(
   // current player played a sequence, advance to next player
   const nextState = {
     ...current,
-    error: '',
-    discardPile: [...current.discardPile, removeCardsFromPlayer(command.player, command.cards)],
+    error: "",
+    discardPile: [
+      ...current.discardPile,
+      removeCardsFromPlayer(command.player, command.cards),
+    ],
     currentPlayer: getNextPlayer(command.player, current.playersIn),
   };
-  nextState.message = `${current.currentPlayer} played. Waiting on ${nextState.currentPlayer}`
+  nextState.message = `${current.currentPlayer} played. Waiting on ${nextState.currentPlayer}`;
 
   return nextState;
 }
