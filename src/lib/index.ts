@@ -54,7 +54,9 @@ export enum CardSequenceKind {
 
 export class Play {
   /** @description falsy cards indicates player passes */
-  constructor(public player: Player, public cards: CardSequence) {
+  constructor(
+    public player: Player,
+    public cards: CardSequence = undefined) {
 
   }
 }
@@ -63,7 +65,7 @@ export class Card {
     public rank: Rank = Rank.Ace,
     public suit: Suit = Suit.Hearts) { }
 
-  toString() {
+  public toString() {
     return `${this.rank} of ${this.suit}`;
   }
 }
@@ -79,9 +81,9 @@ export class Player {
     public order: number = 0,
     public cards: Card[] = undefined) { }
 
-    public toString() {
-      return `Player ${this.name} with ${this?.cards?.length} cards remaining`;
-    } 
+  public toString() {
+    return `Player ${this.name} with ${this?.cards?.length} cards remaining`;
+  }
 }
 export class Round {
   constructor(
@@ -180,6 +182,23 @@ export function getNextPlayer(current: Player, players: Player[]) {
   return index === players.length - 1 ? players[0] : players[index + 1];
 }
 
+export function findOfAKinds(cards: CardSequence): CardSequence[] {
+  const sorted = [...cards].sort(orderByCardRank);
+  let currentSeq: CardSequence = [];
+  const sequences: CardSequence[] = [currentSeq];
+  while (sorted.length > 0) {
+    const card = sorted.shift();
+    if (currentSeq.length === 0 ||
+      currentSeq[currentSeq.length - 1].rank === card.rank) {
+      currentSeq.push(card);
+    } else {
+      currentSeq = [card];
+      sequences.push(currentSeq);
+    }
+  }
+  return sequences;
+}
+
 export function findRuns(cards: CardSequence): CardSequence[] {
   const sorted = [...cards].sort(orderByCardRank);
   let currentSeq: CardSequence = [];
@@ -242,7 +261,7 @@ export function transitionState(current: GameState = undefined, command: Play = 
     }
 
     // current player is the next player of the remaining players in the round
-    nextState.currentPlayer = getNextPlayer(command.player, nextState.playersIn);
+    nextState.currentPlayer = getNextPlayer(command.player, [command.player, ...nextState.playersIn]);
 
     nextState.message = `${command.player.name} passes. Waiting on ${nextState.currentPlayer.name}`;
     return nextState;
