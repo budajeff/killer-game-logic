@@ -48,7 +48,7 @@ export declare class Play {
     player: Player;
     cards: CardSequence;
     /** @description falsy cards indicates player passes */
-    constructor(player: Player, cards: CardSequence);
+    constructor(player: Player, cards?: CardSequence);
 }
 export declare class Card {
     rank: Rank;
@@ -65,6 +65,7 @@ export declare class Player {
     order: number;
     cards: Card[];
     constructor(name?: string, order?: number, cards?: Card[]);
+    toString(): string;
 }
 export declare class Round {
     currentPlayer: Player;
@@ -82,8 +83,10 @@ export declare class GameState {
     error: string;
     constructor(currentPlayer: Player, discardPile: CardSequence[], playersIn: Player[], playersOut: Player[], message: string, error: string);
 }
+export declare function orderBy(orderByProp: string, asc?: boolean): (a: any, b: any) => 1 | 0 | -1;
 export declare function createDeck(): Deck;
 export declare function getPlayersCards(players: Player[]): Card[];
 export declare function getNextPlayer(current: Player, players: Player[]): Player;
+export declare function findOfAKinds(cards: CardSequence): CardSequence[];
 export declare function findRuns(cards: CardSequence): CardSequence[];
 export declare function transitionState(current?: GameState, command?: Play): GameState;
