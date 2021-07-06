@@ -1,7 +1,7 @@
 {
-  "name": "@hodgef/ts-library-boilerplate-basic",
+  "name": "@budajeff/killer-game-logic",
   "version": "1.0.131",
-  "description": "Typescript Minimal Starter Kit for building libraries",
+  "description": "Logic for the Killer card game",
   "main": "build/index.js",
   "types": "build/types/index.d.ts",
   "scripts": {
@@ -15,14 +15,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/hodgef/ts-library-boilerplate-basic"
+    "url": "https://github.com/budajeff/killer-game-logic"
   },
-  "author": "Francisco Hodge <hello@franciscohodge.com> (https://github.com/hodgef)",
+  "author": "Jeff Buda <budajeff@gmail.com> (https://github.com/budajeff)",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/hodgef/ts-library-boilerplate-basic/issues"
+    "url": "https://github.com/budajeff/killer-game-logic/issues"
   },
-  "homepage": "https://github.com/hodgef/ts-library-boilerplate-basic",
+  "homepage": "https://github.com/budajeff/killer-game-logic",
   "keywords": [
     "library",
     "starter",
