@@ -1,4 +1,6 @@
-import { transitionState, Card, Deck, Rank, Suit, Player, createDeck, CardSequence, findRuns, Play, orderBy, findOfAKinds } from '../index';
+import { transitionState, Card, Deck, Rank, Suit, Player, createDeck, 
+  CardSequence, findRuns, Play, orderBy, findOfAKinds, getu } from '../index';
+import { getCurrentPlayer, getPassedPlayers } from '../logic';
 
 describe('createDeck()', () => {
   it('makes a deck of 52 cards', () => {
@@ -11,30 +13,30 @@ describe('createDeck()', () => {
 describe('transition()', () => {
   it('initializes a game state', () => {
     const s = transitionState();
-    expect(s.currentPlayer).toBeTruthy();
+    expect(getCurrentPlayer(s)).toBeTruthy();
     expect(s.discardPile.length).toBe(0);
     expect(s.message).toBeTruthy();
-    s.playersIn.forEach(p => expect(p.cards.length).toBe(13));
+    s.players.forEach(p => expect(p.cards.length).toBe(13));
   });
   it('accepts the first players play', () => {
     const state = transitionState();
-    const play = findRuns(state.currentPlayer.cards)
+    const play = findRuns(getCurrentPlayer(state).cards)
       .sort(orderBy('length', false))[0];
     const newState = transitionState(
       state,
-      new Play(state.currentPlayer, play));
+      new Play(getCurrentPlayer(state), play));
       expect(newState.error).toBeFalsy();
   });
   it('allows a player to pass', () => {
     let state = transitionState();
-    state = transitionState(state, new Play(state.currentPlayer))
-    expect(state.playersOut.length).toBe(1);
-    state = transitionState(state, new Play(state.currentPlayer))
-    expect(state.playersOut.length).toBe(2);
-    state = transitionState(state, new Play(state.currentPlayer))
-    expect(state.playersOut.length).toBe(3);
-    state = transitionState(state, new Play(state.currentPlayer))
-    expect(state.playersOut.length).toBe(4);
+    state = transitionState(state, new Play(getCurrentPlayer(state)));
+    expect(getPassedPlayers(state).length).toBe(1);
+    state = transitionState(state, new Play(getCurrentPlayer(state)));
+    expect(getPassedPlayers(state).length).toBe(2);
+    state = transitionState(state, new Play(getCurrentPlayer(state)));
+    expect(getPassedPlayers(state).length).toBe(3);
+    state = transitionState(state, new Play(getCurrentPlayer(state)));
+    expect(getPassedPlayers(state).length).toBe(4);
   })
 });
 
