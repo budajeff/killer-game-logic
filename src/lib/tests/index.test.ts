@@ -2,7 +2,7 @@ import {
   transitionState, Card, Deck, Rank, Suit, Player, createDeck,
   CardSequence, findRuns, Play, orderBy, findOfAKinds, getu
 } from '../index';
-import { CardSequenceKind, cardSequenceToKind, cardSequenceToString, getCurrentPlayer, getPassedPlayers, isGameOver, transitionStateToHumanPlayer, PlayerKind, findSequencesByKind } from '../logic';
+import { CardSequenceKind, cardSequenceToKind, cardSequenceToString, getCurrentPlayer, getPassedPlayers, isGameOver, transitionStateAuto, PlayerKind, findSequencesByKind } from '../logic';
 
 describe('createDeck()', () => {
   it('makes a deck of 52 cards', () => {
@@ -12,7 +12,7 @@ describe('createDeck()', () => {
   });
 });
 
-describe('transition()', () => {
+describe('transitionState()', () => {
   it('initializes a game state', () => {
     const s = transitionState();
     expect(getCurrentPlayer(s)).toBeTruthy();
@@ -37,19 +37,18 @@ describe('transition()', () => {
     expect(getPassedPlayers(state).length).toBe(2);
     state = transitionState(state, new Play(getCurrentPlayer(state)));
     expect(getPassedPlayers(state).length).toBe(3);
-    state = transitionState(state, new Play(getCurrentPlayer(state)));
-    expect(getPassedPlayers(state).length).toBe(4);
   })
 });
 
-describe('transitionStateToHumanPlayer()', () => {
+describe('transitionStateAuto()', () => {
   it('can advance a game to end state', () => {
     let state = transitionState();
-    state.players.forEach(p => {
-      p.kind = PlayerKind.AI;
-    });
-    state = transitionStateToHumanPlayer(state);
-    expect(getCurrentPlayer(state).kind).toBe(PlayerKind.Human);
+    state.players.forEach(p => p.kind = PlayerKind.AI);
+    state = transitionStateAuto(state);
+    expect(isGameOver(state)).toBe(true);
+    
+    //output
+    state.discardPile.forEach(d => console.debug(`${d.playerName}: ${cardSequenceToString(d.cards)}`));
   });
 });
 
