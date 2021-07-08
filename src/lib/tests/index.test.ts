@@ -1,6 +1,8 @@
-import { transitionState, Card, Deck, Rank, Suit, Player, createDeck, 
-  CardSequence, findRuns, Play, orderBy, findOfAKinds, getu } from '../index';
-import { getCurrentPlayer, getPassedPlayers, isGameOver, orchestrateGame, PlayerKind } from '../logic';
+import {
+  transitionState, Card, Deck, Rank, Suit, Player, createDeck,
+  CardSequence, findRuns, Play, orderBy, findOfAKinds, getu
+} from '../index';
+import { CardSequenceKind, cardSequenceToKind, cardSequenceToString, getCurrentPlayer, getPassedPlayers, isGameOver, transitionStateToHumanPlayer, PlayerKind, findSequencesByKind } from '../logic';
 
 describe('createDeck()', () => {
   it('makes a deck of 52 cards', () => {
@@ -25,7 +27,7 @@ describe('transition()', () => {
     const newState = transitionState(
       state,
       new Play(getCurrentPlayer(state), play));
-      expect(newState.error).toBeFalsy();
+    expect(newState.error).toBeFalsy();
   });
   it('allows a player to pass', () => {
     let state = transitionState();
@@ -40,14 +42,14 @@ describe('transition()', () => {
   })
 });
 
-describe('orchestrateGame()', ()=>{
-  it('can advance a game to end state', ()=> {
+describe('transitionStateToHumanPlayer()', () => {
+  it('can advance a game to end state', () => {
     let state = transitionState();
     state.players.forEach(p => {
       p.kind = PlayerKind.AI;
     });
-    state = orchestrateGame(state, transitionState);
-    expect(isGameOver(state)).toBe(true);
+    state = transitionStateToHumanPlayer(state);
+    expect(getCurrentPlayer(state).kind).toBe(PlayerKind.Human);
   });
 });
 
@@ -67,7 +69,7 @@ describe('findRuns()', () => {
   });
 });
 
-describe('findOfAKinds()', ()=>{
+describe('findOfAKinds()', () => {
   it('can find Of a Kinds', () => {
     const cards: CardSequence = [
       new Card(Rank.Queen),
@@ -83,9 +85,37 @@ describe('findOfAKinds()', ()=>{
     ];
     const ofAKinds = findOfAKinds(cards).sort(orderBy('length'));
     expect(ofAKinds.length).toBe(4);
-    const queens = ofAKinds.filter(s => s[0].rank === Rank.Queen)[0]; 
+    const queens = ofAKinds.filter(s => s[0].rank === Rank.Queen)[0];
     expect(queens.length).toBe(4);
     const sevens = ofAKinds.filter(s => s[0].rank === Rank.Seven)[0];
     expect(sevens.length).toBe(3);
+    const ace = ofAKinds.filter(s => s[0].rank === Rank.Ace)[0];
+    expect(ace.length).toBe(1);
   });
 });
+
+describe('findSequenceByKind()', ()=>{
+  it('can find a run of three', ()=>{
+    const cards = [
+      new Card(8),
+      new Card(7),
+      new Card(4),
+      new Card(9)
+    ];
+    const runs = findRuns(cards);
+    const runsOfThree = findSequencesByKind(cards, CardSequenceKind.RunOfThree);
+    expect(runsOfThree.length).toBe(1);
+  });
+});
+
+describe('cardSequenceToString()', () => {
+  it('can detect one of a kinds', () => {
+    expect(cardSequenceToKind([new Card(Rank.Ace, Suit.Hearts)])).toBe(CardSequenceKind.OneOfAKind);
+  });
+  it('can detect one of a kinds', () => {
+    expect(cardSequenceToKind([
+      new Card(Rank.Ace, Suit.Hearts),
+      new Card(Rank.Eight, Suit.Hearts)])).toBe(CardSequenceKind.Unknown);
+  });
+});
+

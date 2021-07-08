@@ -7,6 +7,7 @@ export {
   CardSequence,
   GameState,
   transitionState,
+  transitionStateToHumanPlayer,
   cardToString,
   findRuns,
   findOfAKinds,
