@@ -1,6 +1,6 @@
 import { transitionState, Card, Deck, Rank, Suit, Player, createDeck, 
   CardSequence, findRuns, Play, orderBy, findOfAKinds, getu } from '../index';
-import { getCurrentPlayer, getPassedPlayers } from '../logic';
+import { getCurrentPlayer, getPassedPlayers, isGameOver, orchestrateGame, PlayerKind } from '../logic';
 
 describe('createDeck()', () => {
   it('makes a deck of 52 cards', () => {
@@ -38,6 +38,17 @@ describe('transition()', () => {
     state = transitionState(state, new Play(getCurrentPlayer(state)));
     expect(getPassedPlayers(state).length).toBe(4);
   })
+});
+
+describe('orchestrateGame()', ()=>{
+  it('can advance a game to end state', ()=> {
+    let state = transitionState();
+    state.players.forEach(p => {
+      p.kind = PlayerKind.AI;
+    });
+    state = orchestrateGame(state, transitionState);
+    expect(isGameOver(state)).toBe(true);
+  });
 });
 
 describe('findRuns()', () => {
