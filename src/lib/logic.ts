@@ -585,31 +585,6 @@ export function transitionState(
         };
     }
 
-    // current player is leading a new round
-    if(state.roundKind === undefined) {
-        const nextState: GameState = {
-            ...state,
-            error: "",
-            roundKind: cardSequenceToKind(command.cards),
-            discardPile: [
-                ...state.discardPile,
-                new Discard(
-                    command.player.name,
-                    removeCardsFromPlayer(command.player, command.cards)
-                ),
-            ],
-        };
-        
-        // current player is the next player of the remaining players in the round
-        setCurrentPlayer(
-            nextState,
-            getNextPlayer(command.player, nextState.players)
-        );
-
-        nextState.message = `${command.player} lead new round with ${cardSequenceToString(command.cards)}. Waiting on ${getCurrentPlayer(nextState)}`;
-        return nextState;
-    }
-
     // no cards in command indicates Player passes and is out for remainder of the Round
     if (!command.cards || command.cards.length === 0) {
         command.player.status = PlayerStatus.PassedRound;
@@ -626,11 +601,41 @@ export function transitionState(
 
         nextState.message = `${command.player.name} passes. Waiting on ${getCurrentPlayer(nextState).name
             }`;
+
+        // one active player means they can lead new round w/ anything
+        if(getActivePlayers(nextState).length === 1) {
+            nextState.roundKind = undefined;
+        }
         return nextState;
     }
 
+        // current player is leading a new round
+        if(state.roundKind === undefined) {
+            const nextState: GameState = {
+                ...state,
+                error: "",
+                roundKind: cardSequenceToKind(command.cards),
+                discardPile: [
+                    ...state.discardPile,
+                    new Discard(
+                        command.player.name,
+                        removeCardsFromPlayer(command.player, command.cards)
+                    ),
+                ],
+            };
+            
+            // current player is the next player of the remaining players in the round
+            setCurrentPlayer(
+                nextState,
+                getNextPlayer(command.player, nextState.players)
+            );
+    
+            nextState.message = `${command.player} lead new round with ${cardSequenceToString(command.cards)}. Waiting on ${getCurrentPlayer(nextState)}`;
+            return nextState;
+        }
+    
     // verify cards are of the same kind as the current round
-    if(state.roundKind && cardSequenceToKind(command.cards) !== state.roundKind) {
+    if(state.roundKind && getActivePlayers(state).length > 1 && cardSequenceToKind(command.cards) !== state.roundKind) {
         return {
             ...state,
             message: "",
