@@ -227,6 +227,7 @@ export class Discard {
 export class GameState {
     constructor(
         public players: Player[],
+        public roundKind: CardSequenceKind|undefined,
         public discardPile: Discard[],
         public message: string,
         public error: string
@@ -237,6 +238,24 @@ function orderByCardRank(a: Card, b: Card) {
     if (a.rank > b.rank) return 1;
     else if (a.rank < b.rank) return -1;
     return 0;
+}
+
+function suitToNumber(suit: Suit) {
+    switch (suit) {
+        case Suit.Hearts:
+            return 3;
+        case Suit.Diamonds:
+            return 2;
+        case Suit.Clubs:
+            return 1;
+        case Suit.Spades:
+            return 0;
+    }
+}
+function compareSuit(a: Suit, b: Suit) {
+    const aNum = suitToNumber(a);
+    const bNum = suitToNumber(b);
+    return aNum === bNum ? 0 : aNum > bNum ? 1 : -1;
 }
 
 export function orderByPlayerOrder(a: Player, b: Player) {
@@ -251,6 +270,18 @@ export function orderBy(orderByProp: string, asc = true) {
         else if (a[orderByProp] < b[orderByProp]) return asc ? -1 : 1;
         return 0;
     };
+}
+
+function compareCardSequences(a: CardSequence, b: CardSequence) {
+    if (cardSequenceToKind(a) !== cardSequenceToKind(b)) {
+        throw new Error(`Cannot compare ${cardSequenceToKind(a)} to ${cardSequenceToKind(b)}`);
+    }
+    const aHighest = [...a].sort(orderByCardRank).reverse()[0];
+    const bHighest = [...b].sort(orderByCardRank).reverse()[0];
+
+    if (aHighest === bHighest)
+        return compareSuit(aHighest.suit, bHighest.suit);
+    return aHighest.rank > bHighest.rank ? 1 : -1;
 }
 
 function shuffle(array: any[]) {
@@ -452,7 +483,7 @@ function getMostRecentDiscard(state: GameState): Discard {
 /** Advances the game state until a human player's command is required (or the game's over or there's an error)  */
 export function transitionStateAuto(
     state: GameState,
-    onStateChanged: (state: GameState) => void = (state) => { console.log(state) },
+    onStateChanged: (state: GameState) => void = (state) => { },
     onContinue: (state: GameState) => boolean = (state) => { return !state.error }
 ): GameState {
     while (!isGameOver(state) && onContinue(state)) {
@@ -480,10 +511,11 @@ export function transitionStateAuto(
             const sequenceToBeat = cardSequenceToKind(
                 getMostRecentDiscard(state).cards
             );
+            //find player sequences of the proper kind that are greater than the discard
             const currentPlayerSequences = findSequencesByKind(
                 currentPlayer.cards,
                 sequenceToBeat
-            );
+            ).filter(s => compareCardSequences(s, getMostRecentDiscard(state).cards) === 1);
 
             if (currentPlayerSequences.length === 0) {
                 state = transitionState(state, new Play(currentPlayer, [])); //pass
@@ -514,6 +546,7 @@ export function transitionState(
         const nextState: GameState = {
             players,
             error: "",
+            roundKind: undefined,
             discardPile: [],
             message: `New Game! Waiting on ${players[0]}`,
         };
@@ -523,24 +556,23 @@ export function transitionState(
         return nextState;
     }
 
-    // verify card sequence
-    if (
-        command?.cards?.length > 0 &&
-        cardSequenceToKind(command.cards) === CardSequenceKind.Unknown
-    ) {
-        return {
-            ...state,
-            message: "",
-            error: `Unknown card sequence: ${cardSequenceToString(command.cards)}`,
-        };
-    }
-
     // verify current player
     if (getCurrentPlayer(state) !== command.player) {
         return {
             ...state,
             error: `It is not ${command.player.name}'s turn. It is ${getCurrentPlayer(state).name
                 }'s turn.`,
+        };
+    }
+
+    // verify card sequence
+    if (command?.cards?.length > 0 &&
+        cardSequenceToKind(command.cards) === CardSequenceKind.Unknown
+    ) {
+        return {
+            ...state,
+            message: "",
+            error: `Unknown card sequence: ${cardSequenceToString(command.cards)}`,
         };
     }
 
@@ -553,7 +585,32 @@ export function transitionState(
         };
     }
 
-    // no cards indicates Player passes and is out for remainder of the Round
+    // current player is leading a new round
+    if(state.roundKind === undefined) {
+        const nextState: GameState = {
+            ...state,
+            error: "",
+            roundKind: cardSequenceToKind(command.cards),
+            discardPile: [
+                ...state.discardPile,
+                new Discard(
+                    command.player.name,
+                    removeCardsFromPlayer(command.player, command.cards)
+                ),
+            ],
+        };
+        
+        // current player is the next player of the remaining players in the round
+        setCurrentPlayer(
+            nextState,
+            getNextPlayer(command.player, nextState.players)
+        );
+
+        nextState.message = `${command.player} lead new round with ${cardSequenceToString(command.cards)}. Waiting on ${getCurrentPlayer(nextState)}`;
+        return nextState;
+    }
+
+    // no cards in command indicates Player passes and is out for remainder of the Round
     if (!command.cards || command.cards.length === 0) {
         command.player.status = PlayerStatus.PassedRound;
         const nextState = {
@@ -572,12 +629,22 @@ export function transitionState(
         return nextState;
     }
 
+    // verify cards are of the same kind as the current round
+    if(state.roundKind && cardSequenceToKind(command.cards) !== state.roundKind) {
+        return {
+            ...state,
+            message: "",
+            error: `${command.player.name} cannot play card sequence ${cardSequenceToString(command.cards)} because the current round is ${state.roundKind}`,
+        };
+    }
+
     if (getActivePlayers(state).length === 1) {
         // only one player in the round -> that player won round and can start next round w/ any sequence kind
         //winner of round remains current player to lead round
         const nextState: GameState = {
             ...state,
             error: "",
+            roundKind: undefined,
             discardPile: [
                 ...state.discardPile,
                 new Discard(
@@ -595,6 +662,15 @@ export function transitionState(
     }
 
     // current player played a sequence, advance to next player
+    // verify card sequence in command is higher than the current card sequence
+    if (getMostRecentDiscard(state)
+        && compareCardSequences(getMostRecentDiscard(state).cards, command.cards)===1) {
+        return {
+            ...state,
+            message: '',
+            error: `Proposed play sequence ${cardSequenceToString(command.cards)} is less than the current sequence ${cardSequenceToString(getMostRecentDiscard(state).cards)}`
+        };
+    }
     const nextState: GameState = {
         ...state,
         error: "",
