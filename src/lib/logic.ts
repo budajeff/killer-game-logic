@@ -138,13 +138,13 @@ function ofAKindSequenceToKind(length: number): CardSequenceKind {
 }
 
 function runSequenceToKind(cards: CardSequence): CardSequenceKind {
-    const runs = findRuns(cards);
-    const run = runs.find(s => s.length === cards.length);
-    if(!run) {
-        return CardSequenceKind.Unknown;
-    }
+  const runs = findRuns(cards);
+  const run = runs.find((s) => s.length === cards.length);
+  if (!run) {
+    return CardSequenceKind.Unknown;
+  }
 
-    //runs must be at least three cards long
+  //runs must be at least three cards long
   switch (run.length) {
     case 3:
       return CardSequenceKind.RunOfThree;
@@ -279,7 +279,7 @@ export function orderBy(orderByProp: string, asc = true) {
   };
 }
 
-function compareCardSequences(a: CardSequence, b: CardSequence) {
+export function compareCardSequences(a: CardSequence, b: CardSequence) {
   if (cardSequenceToKind(a) !== cardSequenceToKind(b)) {
     throw new Error(
       `Cannot compare ${cardSequenceToKind(a)} to ${cardSequenceToKind(b)}`
@@ -288,7 +288,7 @@ function compareCardSequences(a: CardSequence, b: CardSequence) {
   const aHighest = [...a].sort(orderByCardRank).reverse()[0];
   const bHighest = [...b].sort(orderByCardRank).reverse()[0];
 
-  if (aHighest === bHighest) return compareSuit(aHighest.suit, bHighest.suit);
+  if (aHighest.rank === bHighest.rank) return compareSuit(aHighest.suit, bHighest.suit);
   return aHighest.rank > bHighest.rank ? 1 : -1;
 }
 
@@ -401,28 +401,6 @@ export function findRuns(cards: CardSequence): CardSequence[] {
   return sequences;
 }
 
-export function findRunsOLD(cards: CardSequence): CardSequence[] {
-  const sorted = [...cards].sort(orderByCardRank);
-  let currentSeq: CardSequence = [];
-  const sequences: CardSequence[] = [currentSeq];
-  sorted.forEach((card) => {
-    if (
-      currentSeq.length === 0 ||
-      currentSeq[currentSeq.length - 1].rank + 1 === card.rank
-    ) {
-      //theres no current sequence
-      //or the card does sequentially follows the curr seq
-      currentSeq.push(card);
-    } else {
-      // current sequence is broken, add it to the return list
-      sequences.push(currentSeq);
-
-      // current card is start of new sequence
-      currentSeq = [card];
-    }
-  });
-  return sequences;
-}
 export function findSequences(cards: CardSequence) {
   return [...findRuns(cards), ...findOfAKinds(cards)];
 }
@@ -488,7 +466,7 @@ function getMostRecentDiscard(state: GameState): Discard {
     : state.discardPile[state.discardPile.length - 1];
 }
 
-/** Advances the game state until a human player's command is required (or the game's over or there's an error)  */
+/** Advances the game state automatically until onContinue() returns false (e.g., when it's a human's turn or if there's an error)  */
 export function transitionStateAuto(
   state: GameState,
   onStateChanged: (state: GameState) => void = (state) => {},

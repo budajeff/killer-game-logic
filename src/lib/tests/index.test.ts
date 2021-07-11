@@ -2,7 +2,9 @@ import {
   transitionState, Card, Deck, Rank, Suit, Player, createDeck,
   CardSequence, findRuns, Play, orderBy, findOfAKinds, getu
 } from '../index';
-import { CardSequenceKind, cardSequenceToKind, cardSequenceToString, getCurrentPlayer, getPassedPlayers, isGameOver, transitionStateAuto, PlayerKind, findSequencesByKind } from '../logic';
+import { CardSequenceKind, cardSequenceToKind, cardSequenceToString, compareCardSequences,
+   getCurrentPlayer, getPassedPlayers, isGameOver, transitionStateAuto, 
+   PlayerKind, findSequencesByKind, findSequences } from '../logic';
 
 describe('createDeck()', () => {
   it('makes a deck of 52 cards', () => {
@@ -46,7 +48,7 @@ describe('transitionStateAuto()', () => {
     state.players.forEach(p => p.kind = PlayerKind.AI);
     state = transitionStateAuto(state);
     expect(isGameOver(state)).toBe(true);
-    
+
     //output
     state.discardPile.forEach(d => console.debug(`${d.playerName}: ${cardSequenceToString(d.cards)}`));
   });
@@ -93,8 +95,22 @@ describe('findOfAKinds()', () => {
   });
 });
 
-describe('findSequenceByKind()', ()=>{
-  it('can find a run of three', ()=>{
+describe('findSequences()', () => {
+  it('finds two one of a kinds given A♦ 6♧', () => {
+    const cards = [new Card(Rank.Ace), new Card(Rank.Six)];
+    const result = findSequences(cards);
+    expect(result.length).toBe(2);
+  });
+});
+
+describe('compareCardSequences()', ()=>{
+  it('knows A♥ is greater than A♠', ()=>{
+    expect(compareCardSequences([new Card(Rank.Ace,Suit.Hearts)], [new Card(Rank.Ace, Suit.Spades)])).toBe(1);
+  });
+});
+
+describe('findSequenceByKind()', () => {
+  it('can find a run of three', () => {
     const cards = [
       new Card(8),
       new Card(7),
@@ -112,33 +128,42 @@ describe('cardSequenceToKind()', () => {
     expect(cardSequenceToKind([new Card(Rank.Ace, Suit.Hearts)])).toBe(CardSequenceKind.OneOfAKind);
     expect(cardSequenceToKind([new Card(Rank.Ace, Suit.Hearts), new Card(Rank.Ace, Suit.Clubs)])).toBe(CardSequenceKind.TwoOfAKind);
     expect(cardSequenceToKind([
-      new Card(Rank.Ace, Suit.Hearts), 
-      new Card(Rank.Ace, Suit.Clubs), 
+      new Card(Rank.Ace, Suit.Hearts),
+      new Card(Rank.Ace, Suit.Clubs),
       new Card(Rank.Ace, Suit.Spades)])).toBe(CardSequenceKind.ThreeOfAKind);
-      expect(cardSequenceToKind([
-        new Card(Rank.Ace, Suit.Hearts), 
-        new Card(Rank.Ace, Suit.Clubs), 
-        new Card(Rank.Ace, Suit.Spades),
-        new Card(Rank.Ace, Suit.Diamonds),
-      ])).toBe(CardSequenceKind.FourOfAKind);
-      });
-  it('knows that this is not a run of seven', ()=>{
+    expect(cardSequenceToKind([
+      new Card(Rank.Ace, Suit.Hearts),
+      new Card(Rank.Ace, Suit.Clubs),
+      new Card(Rank.Ace, Suit.Spades),
+      new Card(Rank.Ace, Suit.Diamonds),
+    ])).toBe(CardSequenceKind.FourOfAKind);
+  });
+  it('knows that this is not a run of seven', () => {
     //2♧ 9♦ 10♦ 2♥ A♥ J♠ J♧
     const invalid = [
-      new Card(Rank.Two), 
-      new Card(Rank.Nine), 
-      new Card(Rank.Ten), 
-      new Card(Rank.Two), 
+      new Card(Rank.Two),
+      new Card(Rank.Nine),
+      new Card(Rank.Ten),
+      new Card(Rank.Two),
       new Card(Rank.Ace),
-    new Card(Rank.Jack),
-    new Card(Rank.Jack)
-  ];
-  expect(cardSequenceToKind(invalid)).toBe(CardSequenceKind.Unknown);
+      new Card(Rank.Jack),
+      new Card(Rank.Jack)
+    ];
+    expect(cardSequenceToKind(invalid)).toBe(CardSequenceKind.Unknown);
   });
+  it('knows that A♦ 6♧ is not a run of two', () => {
+    //2♧ 9♦ 10♦ 2♥ A♥ J♠ J♧
+    const invalid = [
+      new Card(Rank.Ace),
+      new Card(Rank.Six),
+    ];
+    expect(cardSequenceToKind(invalid)).toBe(CardSequenceKind.Unknown);
+  });
+
   it('can detect non-sequences', () => {
-      expect(cardSequenceToKind([
-        new Card(Rank.Ace, Suit.Hearts),
-        new Card(Rank.Eight, Suit.Hearts)])).toBe(CardSequenceKind.Unknown);
-    });
+    expect(cardSequenceToKind([
+      new Card(Rank.Ace, Suit.Hearts),
+      new Card(Rank.Eight, Suit.Hearts)])).toBe(CardSequenceKind.Unknown);
+  });
 });
 
