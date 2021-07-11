@@ -92,10 +92,11 @@ export declare class Discard {
 }
 export declare class GameState {
     players: Player[];
+    roundKind: CardSequenceKind | undefined;
     discardPile: Discard[];
     message: string;
     error: string;
-    constructor(players: Player[], discardPile: Discard[], message: string, error: string);
+    constructor(players: Player[], roundKind: CardSequenceKind | undefined, discardPile: Discard[], message: string, error: string);
 }
 export declare function orderByPlayerOrder(a: Player, b: Player): 1 | 0 | -1;
 export declare function orderBy(orderByProp: string, asc?: boolean): (a: any, b: any) => 1 | 0 | -1;
@@ -109,5 +110,5 @@ export declare function findRunsOLD(cards: CardSequence): CardSequence[];
 export declare function findSequences(cards: CardSequence): CardSequence[];
 export declare function findSequencesByKind(cards: CardSequence, kind: CardSequenceKind): CardSequence[];
 /** Advances the game state until a human player's command is required (or the game's over or there's an error)  */
-export declare function transitionStateToHumanPlayer(state: GameState, onStateChanged?: (state: GameState) => void): GameState;
+export declare function transitionStateAuto(state: GameState, onStateChanged?: (state: GameState) => void, onContinue?: (state: GameState) => boolean): GameState;
 export declare function transitionState(state?: GameState, command?: Play): GameState;

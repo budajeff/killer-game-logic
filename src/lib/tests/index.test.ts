@@ -107,14 +107,38 @@ describe('findSequenceByKind()', ()=>{
   });
 });
 
-describe('cardSequenceToString()', () => {
-  it('can detect one of a kinds', () => {
+describe('cardSequenceToKind()', () => {
+  it('can detect of a kinds', () => {
     expect(cardSequenceToKind([new Card(Rank.Ace, Suit.Hearts)])).toBe(CardSequenceKind.OneOfAKind);
-  });
-  it('can detect one of a kinds', () => {
+    expect(cardSequenceToKind([new Card(Rank.Ace, Suit.Hearts), new Card(Rank.Ace, Suit.Clubs)])).toBe(CardSequenceKind.TwoOfAKind);
     expect(cardSequenceToKind([
-      new Card(Rank.Ace, Suit.Hearts),
-      new Card(Rank.Eight, Suit.Hearts)])).toBe(CardSequenceKind.Unknown);
+      new Card(Rank.Ace, Suit.Hearts), 
+      new Card(Rank.Ace, Suit.Clubs), 
+      new Card(Rank.Ace, Suit.Spades)])).toBe(CardSequenceKind.ThreeOfAKind);
+      expect(cardSequenceToKind([
+        new Card(Rank.Ace, Suit.Hearts), 
+        new Card(Rank.Ace, Suit.Clubs), 
+        new Card(Rank.Ace, Suit.Spades),
+        new Card(Rank.Ace, Suit.Diamonds),
+      ])).toBe(CardSequenceKind.FourOfAKind);
+      });
+  it('knows that this is not a run of seven', ()=>{
+    //2♧ 9♦ 10♦ 2♥ A♥ J♠ J♧
+    const invalid = [
+      new Card(Rank.Two), 
+      new Card(Rank.Nine), 
+      new Card(Rank.Ten), 
+      new Card(Rank.Two), 
+      new Card(Rank.Ace),
+    new Card(Rank.Jack),
+    new Card(Rank.Jack)
+  ];
+  expect(cardSequenceToKind(invalid)).toBe(CardSequenceKind.Unknown);
   });
+  it('can detect non-sequences', () => {
+      expect(cardSequenceToKind([
+        new Card(Rank.Ace, Suit.Hearts),
+        new Card(Rank.Eight, Suit.Hearts)])).toBe(CardSequenceKind.Unknown);
+    });
 });
 
