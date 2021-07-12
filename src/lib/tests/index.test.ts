@@ -46,8 +46,15 @@ describe('transitionStateAuto()', () => {
   it('can advance a game to end state', () => {
     let state = transitionState();
     state.players.forEach(p => p.kind = PlayerKind.AI);
-    state = transitionStateAuto(state);
-    expect(isGameOver(state)).toBe(true);
+    state = transitionStateAuto(
+      state, 
+      newState => console.log(newState), 
+      newState => {
+        expect(newState.error).toBeFalsy();
+        return !newState.error;
+      });
+    
+      expect(isGameOver(state)).toBe(true);
 
     //output
     state.discardPile.forEach(d => console.debug(`${d.playerName}: ${cardSequenceToString(d.cards)}`));
