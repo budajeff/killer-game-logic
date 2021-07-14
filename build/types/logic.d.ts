@@ -52,10 +52,10 @@ export declare enum PlayerStatus {
     PassedRound = "passed"
 }
 export declare class Play {
-    player: Player;
+    playerName: string;
     cards: CardSequence;
     /** @description falsy cards indicates player passes */
-    constructor(player: Player, cards?: CardSequence);
+    constructor(playerName: string, cards?: CardSequence);
 }
 export declare class Card {
     rank: Rank;
@@ -80,6 +80,7 @@ export declare class Player {
     constructor(name?: string, kind?: PlayerKind, order?: number, cards?: Card[], status?: PlayerStatus, current?: boolean);
     toString(): string;
 }
+export declare function getPlayer(state: GameState, name: string): Player;
 export declare function getActivePlayers(state: GameState): Player[];
 export declare function getPassedPlayers(state: GameState): Player[];
 export declare function setCurrentPlayer(state: GameState, player: Player): void;
@@ -100,15 +101,23 @@ export declare class GameState {
 }
 export declare function orderByPlayerOrder(a: Player, b: Player): 1 | 0 | -1;
 export declare function orderBy(orderByProp: string, asc?: boolean): (a: any, b: any) => 1 | 0 | -1;
+export declare function compareCardSequences(a: CardSequence, b: CardSequence): 1 | 0 | -1;
 export declare function createDeck(): Deck;
 export declare function getPlayersCards(players: Player[]): Card[];
 /** Get the next player who is still in the current round (who has not Passed) */
-export declare function getNextPlayer(current: Player, players: Player[]): Player;
+export declare function getNextPlayer(state: GameState, currentPlayerName: string): Player;
 export declare function findOfAKinds(cards: CardSequence): CardSequence[];
 export declare function findRuns(cards: CardSequence): CardSequence[];
-export declare function findRunsOLD(cards: CardSequence): CardSequence[];
 export declare function findSequences(cards: CardSequence): CardSequence[];
 export declare function findSequencesByKind(cards: CardSequence, kind: CardSequenceKind): CardSequence[];
-/** Advances the game state until a human player's command is required (or the game's over or there's an error)  */
+/** Advances the game state automatically until onContinue() returns false (e.g., when it's a human's turn or if there's an error)  */
 export declare function transitionStateAuto(state: GameState, onStateChanged?: (state: GameState) => void, onContinue?: (state: GameState) => boolean): GameState;
+/**
+ *
+ *
+ *
+ * @param state
+ * @param command
+ * @returns
+ */
 export declare function transitionState(state?: GameState, command?: Play): GameState;

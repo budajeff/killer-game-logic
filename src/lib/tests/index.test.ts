@@ -2,9 +2,11 @@ import {
   transitionState, Card, Deck, Rank, Suit, Player, createDeck,
   CardSequence, findRuns, Play, orderBy, findOfAKinds, getu
 } from '../index';
-import { CardSequenceKind, cardSequenceToKind, cardSequenceToString, compareCardSequences,
-   getCurrentPlayer, getPassedPlayers, isGameOver, transitionStateAuto, 
-   PlayerKind, findSequencesByKind, findSequences } from '../logic';
+import {
+  CardSequenceKind, cardSequenceToKind, cardSequenceToString, compareCardSequences,
+  getCurrentPlayer, getPassedPlayers, isGameOver, transitionStateAuto,
+  PlayerKind, findSequencesByKind, findSequences
+} from '../logic';
 
 describe('createDeck()', () => {
   it('makes a deck of 52 cards', () => {
@@ -47,14 +49,14 @@ describe('transitionStateAuto()', () => {
     let state = transitionState();
     state.players.forEach(p => p.kind = PlayerKind.AI);
     state = transitionStateAuto(
-      state, 
-      newState => console.log(newState), 
+      state,
+      newState => console.log(newState),
       newState => {
         expect(newState.error).toBeFalsy();
         return !newState.error;
       });
-    
-      expect(isGameOver(state)).toBe(true);
+
+    expect(isGameOver(state)).toBe(true);
 
     //output
     state.discardPile.forEach(d => console.debug(`${d.playerName}: ${cardSequenceToString(d.cards)}`));
@@ -110,9 +112,9 @@ describe('findSequences()', () => {
   });
 });
 
-describe('compareCardSequences()', ()=>{
-  it('knows A♥ is greater than A♠', ()=>{
-    expect(compareCardSequences([new Card(Rank.Ace,Suit.Hearts)], [new Card(Rank.Ace, Suit.Spades)])).toBe(1);
+describe('compareCardSequences()', () => {
+  it('knows A♥ is greater than A♠', () => {
+    expect(compareCardSequences([new Card(Rank.Ace, Suit.Hearts)], [new Card(Rank.Ace, Suit.Spades)])).toBe(1);
   });
 });
 
@@ -174,3 +176,11 @@ describe('cardSequenceToKind()', () => {
   });
 });
 
+describe('state bugs found in app are fixed', () => {
+  it('works', () => {
+    const state = JSON.parse("{\"players\":[{\"name\":\"A\",\"kind\":\"ai\",\"order\":0,\"cards\":[{\"suit\":\"hearts\",\"rank\":7},{\"suit\":\"hearts\",\"rank\":1},{\"suit\":\"diamonds\",\"rank\":2},{\"suit\":\"hearts\",\"rank\":2},{\"suit\":\"spades\",\"rank\":6},{\"suit\":\"hearts\",\"rank\":10},{\"suit\":\"spades\",\"rank\":11,\"selected\":true},{\"suit\":\"spades\",\"rank\":13},{\"suit\":\"spades\",\"rank\":2}],\"status\":\"in\",\"current\":true},{\"name\":\"B\",\"kind\":\"ai\",\"order\":1,\"cards\":[{\"suit\":\"hearts\",\"rank\":9},{\"suit\":\"clubs\",\"rank\":5},{\"suit\":\"diamonds\",\"rank\":8},{\"suit\":\"diamonds\",\"rank\":13},{\"suit\":\"spades\",\"rank\":4},{\"suit\":\"hearts\",\"rank\":4},{\"suit\":\"clubs\",\"rank\":4},{\"suit\":\"hearts\",\"rank\":12},{\"suit\":\"clubs\",\"rank\":12},{\"suit\":\"clubs\",\"rank\":6},{\"suit\":\"spades\",\"rank\":1},{\"suit\":\"clubs\",\"rank\":11},{\"suit\":\"spades\",\"rank\":12}],\"status\":\"in\",\"current\":false},{\"name\":\"C\",\"kind\":\"ai\",\"order\":2,\"cards\":[{\"suit\":\"diamonds\",\"rank\":10},{\"suit\":\"spades\",\"rank\":10}],\"status\":\"in\",\"current\":false},{\"name\":\"D\",\"kind\":\"ai\",\"order\":3,\"cards\":[{\"suit\":\"diamonds\",\"rank\":1},{\"suit\":\"diamonds\",\"rank\":3},{\"suit\":\"hearts\",\"rank\":11},{\"suit\":\"spades\",\"rank\":5},{\"suit\":\"hearts\",\"rank\":3},{\"suit\":\"clubs\",\"rank\":3},{\"suit\":\"clubs\",\"rank\":1},{\"suit\":\"clubs\",\"rank\":8},{\"suit\":\"diamonds\",\"rank\":7},{\"suit\":\"clubs\",\"rank\":2},{\"suit\":\"spades\",\"rank\":8},{\"suit\":\"clubs\",\"rank\":13},{\"suit\":\"clubs\",\"rank\":7}],\"status\":\"passed\",\"current\":false}],\"error\":\"\",\"discardPile\":[{\"playerName\":\"A\",\"cards\":[{\"suit\":\"hearts\",\"rank\":8},{\"suit\":\"hearts\",\"rank\":6},{\"suit\":\"spades\",\"rank\":7},{\"suit\":\"hearts\",\"rank\":5}]},{\"playerName\":\"C\",\"cards\":[{\"suit\":\"clubs\",\"rank\":10},{\"suit\":\"diamonds\",\"rank\":11},{\"suit\":\"diamonds\",\"rank\":12},{\"suit\":\"hearts\",\"rank\":13}]},{\"playerName\":\"C\",\"cards\":[{\"suit\":\"spades\",\"rank\":3},{\"suit\":\"diamonds\",\"rank\":4},{\"suit\":\"diamonds\",\"rank\":5},{\"suit\":\"diamonds\",\"rank\":6}]},{\"playerName\":\"C\",\"cards\":[{\"suit\":\"diamonds\",\"rank\":9},{\"suit\":\"clubs\",\"rank\":9},{\"suit\":\"spades\",\"rank\":9}]}],\"message\":\"D passes. Waiting on A\"}");
+    const next = transitionStateAuto(state);
+    expect(next.error).toBeFalsy();
+  });
+
+});

@@ -180,7 +180,10 @@ export enum PlayerStatus {
 
 export class Play {
   /** @description falsy cards indicates player passes */
-  constructor(public player: Player, public cards: CardSequence = undefined) {}
+  constructor(
+    public playerName: string,
+    public cards: CardSequence = undefined
+  ) {}
 }
 export class Card {
   constructor(public rank: Rank = Rank.Ace, public suit: Suit = Suit.Hearts) {}
@@ -210,8 +213,8 @@ export class Player {
     return `Player ${this.name} with ${this?.cards?.length} cards remaining`;
   }
 }
-export function getPlayer(state:GameState, name:string) {
-  return state.players.find(p=>p.name===name);
+export function getPlayer(state: GameState, name: string) {
+  return state.players.find((p) => p.name === name);
 }
 export function getActivePlayers(state: GameState) {
   return state.players.filter((p) => p.status === PlayerStatus.InRound);
@@ -221,7 +224,7 @@ export function getPassedPlayers(state: GameState) {
 }
 export function setCurrentPlayer(state: GameState, player: Player) {
   state.players.forEach((p) => (p.current = false));
-  state.players.find(p => p.name === player.name).current = true;
+  state.players.find((p) => p.name === player.name).current = true;
 }
 export function getCurrentPlayer(state: GameState): Player | undefined {
   return state.players.find((p) => p.current);
@@ -290,7 +293,8 @@ export function compareCardSequences(a: CardSequence, b: CardSequence) {
   const aHighest = [...a].sort(orderByCardRank).reverse()[0];
   const bHighest = [...b].sort(orderByCardRank).reverse()[0];
 
-  if (aHighest.rank === bHighest.rank) return compareSuit(aHighest.suit, bHighest.suit);
+  if (aHighest.rank === bHighest.rank)
+    return compareSuit(aHighest.suit, bHighest.suit);
   return aHighest.rank > bHighest.rank ? 1 : -1;
 }
 
@@ -322,12 +326,11 @@ function dealCards(deck: Deck, players: Player[]) {
   players.forEach((player) => (player.cards = deck.splice(0, 13)));
 }
 
-function deepClone<TInstance>(state:TInstance):TInstance {
-  if(typeof state === "undefined")
-    return undefined;
-  if(typeof state !== "object")
+function deepClone<TInstance>(state: TInstance): TInstance {
+  if (typeof state === "undefined") return undefined;
+  if (typeof state !== "object")
     throw new Error(`Only undefined and object are supported.`);
-  const clone = JSON.parse(JSON.stringify(state))
+  const clone = JSON.parse(JSON.stringify(state));
   return clone;
 }
 
@@ -355,11 +358,11 @@ export function getPlayersCards(players: Player[]) {
 }
 
 /** Get the next player who is still in the current round (who has not Passed) */
-export function getNextPlayer(current: Player, players: Player[]) {
-  const sorted = [...players].sort(orderByPlayerOrder);
-  let index = sorted.indexOf(sorted.find(p=>p.name === current.name));
+export function getNextPlayer(state: GameState, currentPlayerName: string) {
+  const sorted = [...state.players].sort(orderByPlayerOrder);
+  let index = sorted.indexOf(sorted.find((p) => p.name === currentPlayerName));
   do {
-    if (index === players.length - 1) {
+    if (index === sorted.length - 1) {
       index = 0; //loop back to beginning
     } else {
       index = index + 1;
@@ -367,7 +370,7 @@ export function getNextPlayer(current: Player, players: Player[]) {
     if (sorted[index].status === PlayerStatus.InRound) {
       return sorted[index]; //return the next player who's still in this round
     }
-  } while (sorted[index] !== current); //done once we're back at the current player
+  } while (sorted[index].name !== currentPlayerName); //done once we're back at the current player
   return undefined; //perhaps no one is left in the round?
 }
 
@@ -458,7 +461,7 @@ export function findSequencesByKind(
 
 function removeCardsFromPlayer(
   state: GameState,
-  playerName:string,
+  playerName: string,
   cards: CardSequence
 ): CardSequence {
   const player = getPlayer(state, playerName);
@@ -496,7 +499,10 @@ export function transitionStateAuto(
       // current play should play their longest sequence
       const sequences = findSequences(currentPlayer.cards);
       sequences.sort(orderBy("length", false));
-      state = transitionState(state, new Play(currentPlayer, sequences[0]));
+      state = transitionState(
+        state,
+        new Play(currentPlayer.name, sequences[0])
+      );
       onStateChanged(state);
     } else if (currentPlayer.name === getMostRecentDiscard(state).playerName) {
       // current player was last to discard which means they won the round
@@ -506,7 +512,7 @@ export function transitionStateAuto(
       );
       state = transitionState(
         state,
-        new Play(currentPlayer, currentPlayerSequences[0])
+        new Play(currentPlayer.name, currentPlayerSequences[0])
       );
       onStateChanged(state);
     } else {
@@ -522,11 +528,11 @@ export function transitionStateAuto(
       );
 
       if (currentPlayerSequences.length === 0) {
-        state = transitionState(state, new Play(currentPlayer, [])); //pass
+        state = transitionState(state, new Play(currentPlayer.name, [])); //pass
       } else {
         state = transitionState(
           state,
-          new Play(currentPlayer, currentPlayerSequences[0])
+          new Play(currentPlayer.name, currentPlayerSequences[0])
         ); //play
       }
       onStateChanged(state);
@@ -535,11 +541,20 @@ export function transitionStateAuto(
   return state;
 }
 
+/**
+ *
+ *
+ *
+ * @param state
+ * @param command
+ * @returns
+ */
 export function transitionState(
   state: GameState = undefined,
   command: Play = undefined
 ): GameState {
   command = deepClone(command);
+
   if (!state) {
     // no previous state so generate a new game
     const players = [
@@ -561,11 +576,20 @@ export function transitionState(
     return nextState;
   }
 
-  // verify current player
-  if (getCurrentPlayer(state).name !== command.player.name) {
+  //verify game is not over
+  const winners = state.players.filter((p) => p.cards.length === 0);
+  if (winners.length > 0) {
     return {
       ...deepClone(state),
-      error: `It is not ${command.player.name}'s turn. It is ${
+      error: `${winners[0].name} won this game.`,
+    };
+  }
+
+  // verify current player
+  if (getCurrentPlayer(state).name !== command.playerName) {
+    return {
+      ...deepClone(state),
+      error: `It is not ${command.playerName}'s turn. It is ${
         getCurrentPlayer(state).name
       }'s turn.`,
     };
@@ -583,32 +607,24 @@ export function transitionState(
     };
   }
 
-  //verify game is not over
-  const winners = state.players.filter((p) => p.cards.length === 0);
-  if (winners.length > 0) {
-    return {
-      ...deepClone(state),
-      error: `${winners[0].name} won this game.`,
-    };
-  }
-
   // no cards in command indicates Player passes and is out for remainder of the Round
   if (!command.cards || command.cards.length === 0) {
     const nextState = {
       ...deepClone(state),
       error: "",
     };
-    
+
     // set Passed status on player
-    nextState.players.find(p=>p.name === command.player.name).status = PlayerStatus.PassedRound;
+    nextState.players.find((p) => p.name === command.playerName).status =
+      PlayerStatus.PassedRound;
 
     // current player is the next player of the remaining players in the round
     setCurrentPlayer(
       nextState,
-      getNextPlayer(command.player, nextState.players)
+      getNextPlayer(nextState, getCurrentPlayer(nextState).name)
     );
 
-    nextState.message = `${command.player.name} passes. Waiting on ${
+    nextState.message = `${command.playerName} passes. Waiting on ${
       getCurrentPlayer(nextState).name
     }`;
 
@@ -625,25 +641,34 @@ export function transitionState(
       ...deepClone(state),
       error: "",
       roundKind: cardSequenceToKind(command.cards),
-      discardPile: [
-        ...state.discardPile]
+      discardPile: [...state.discardPile],
     };
     const discard = new Discard(
-      command.player.name,
-      removeCardsFromPlayer(nextState, command.player.name, command.cards));
+      command.playerName,
+      removeCardsFromPlayer(nextState, command.playerName, command.cards)
+    );
     nextState.discardPile.push(discard);
 
-    // current player is the next player of the remaining players in the round
-    setCurrentPlayer(
-      nextState,
-      getNextPlayer(command.player, nextState.players)
-    );
+    // check for end game after removing cards from the current player
+    const commandPlayer = getPlayer(nextState, command.playerName);
+    if (commandPlayer.cards.length === 0) {
+      nextState.message = `${commandPlayer.name} played ${cardSequenceToString(
+        command.cards
+      )}, has no cards left, and is the winner. `;
+      return nextState;
+    }
+
+    //all players are In the new round
+    nextState.players.forEach((p) => (p.status = PlayerStatus.InRound));
+
+    // current player is the next player
+    setCurrentPlayer(nextState, getNextPlayer(nextState, command.playerName));
 
     nextState.message = `${
-      command.player.name
-    } lead new round with ${cardSequenceToString(
-      command.cards
-    )}. Waiting on ${getCurrentPlayer(nextState).name}`;
+      command.playerName
+    } lead new round with ${cardSequenceToString(command.cards)}. Waiting on ${
+      getCurrentPlayer(nextState).name
+    }`;
     return nextState;
   }
 
@@ -657,7 +682,7 @@ export function transitionState(
       ...deepClone(state),
       message: "",
       error: `${
-        command.player.name
+        command.playerName
       } cannot play card sequence ${cardSequenceToString(
         command.cards
       )} because the current round is ${state.roundKind}`,
@@ -671,21 +696,25 @@ export function transitionState(
       ...deepClone(state),
       error: "",
       roundKind: undefined,
-      discardPile: [
-        ...state.discardPile,
-      ],
+      discardPile: [...state.discardPile],
     };
     const discard = new Discard(
-      command.player.name,
-      removeCardsFromPlayer(nextState, command.player.name, command.cards));
+      command.playerName,
+      removeCardsFromPlayer(nextState, command.playerName, command.cards)
+    );
     nextState.discardPile.push(discard);
 
     nextState.players.forEach((p) => (p.status = PlayerStatus.InRound));
-    nextState.message = `${command.player.name} played ${cardSequenceToString(
-      command.player.cards
+
+    // current player is unchanged in this case.
+    // winner of this round leads the new round
+
+    nextState.message = `${command.playerName} played ${cardSequenceToString(
+      command.cards
     )} and won the round. Waiting on ${
       getCurrentPlayer(nextState).name
     } to start new round.`;
+
     return nextState;
   }
 
@@ -708,25 +737,25 @@ export function transitionState(
   const nextState: GameState = {
     ...deepClone(state),
     error: "",
-    discardPile: [
-      ...state.discardPile
-    ],
+    discardPile: [...state.discardPile],
   };
-  const discard =       new Discard(
-    command.player.name,
-    removeCardsFromPlayer(nextState, command.player.name, command.cards))
-    nextState.discardPile.push(discard);
+  const discard = new Discard(
+    command.playerName,
+    removeCardsFromPlayer(nextState, command.playerName, command.cards)
+  );
+  nextState.discardPile.push(discard);
 
   // check for end game after removing cards from the current player
-  if (command.player.cards.length === 0) {
-    nextState.message = `${command.player.name} played ${cardSequenceToString(
+  const commandPlayer = getPlayer(nextState, command.playerName);
+  if (commandPlayer.cards.length === 0) {
+    nextState.message = `${commandPlayer.name} played ${cardSequenceToString(
       command.cards
     )}, has no cards left, and is the winner. `;
   } else {
-    setCurrentPlayer(nextState, getNextPlayer(command.player, state.players));
-    nextState.message = `${command.player.name} played ${cardSequenceToString(
+    setCurrentPlayer(nextState, getNextPlayer(nextState, command.playerName));
+    nextState.message = `${commandPlayer.name} played ${cardSequenceToString(
       command.cards
-    )}. Waiting on ${getCurrentPlayer(nextState)}`;
+    )}. Waiting on ${getCurrentPlayer(nextState).name}`;
   }
   return nextState;
 }
