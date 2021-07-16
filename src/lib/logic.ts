@@ -14,7 +14,7 @@ function getSuitText(suit: Suit) {
     case "diamonds":
       return "\u2666";
     case "clubs":
-      return "\u2667";
+      return "\u2663";
     case "spades":
       return "\u2660";
     default:
@@ -113,7 +113,8 @@ export function cardSequenceToKind(cards: CardSequence): CardSequenceKind {
 }
 
 export function cardSequenceToString(cards: CardSequence): string {
-  const cardText = cards.reduce(
+  const sortedCards = [...cards].sort(orderByCardRank).reverse();
+  const cardText = sortedCards.reduce(
     (textList, c, index) =>
       (textList +=
         cardToString(c) + (index === textList.length - 1 ? "" : " ")),
@@ -285,6 +286,26 @@ export function orderBy(orderByProp: string, asc = true) {
 }
 
 export function compareCardSequences(a: CardSequence, b: CardSequence) {
+  const aIsGreater = 1;
+  const bIsGreater = -1;
+
+  const aKind = cardSequenceToKind(a);
+  const bKind = cardSequenceToKind(b);
+
+  if (
+    aKind == CardSequenceKind.FourOfAKind &&
+    bKind != CardSequenceKind.FourOfAKind
+  ) {
+    return aIsGreater; //four of kind/killer trumps all other plays
+  }
+
+  if (
+    bKind == CardSequenceKind.FourOfAKind &&
+    aKind != CardSequenceKind.FourOfAKind
+  ) {
+    return bIsGreater; //four of kind/killer trumps all other plays
+  }
+
   if (cardSequenceToKind(a) !== cardSequenceToKind(b)) {
     throw new Error(
       `Cannot compare ${cardSequenceToKind(a)} to ${cardSequenceToKind(b)}`
@@ -295,7 +316,7 @@ export function compareCardSequences(a: CardSequence, b: CardSequence) {
 
   if (aHighest.rank === bHighest.rank)
     return compareSuit(aHighest.suit, bHighest.suit);
-  return aHighest.rank > bHighest.rank ? 1 : -1;
+  return aHighest.rank > bHighest.rank ? aIsGreater : bIsGreater;
 }
 
 function shuffle(array: any[]) {
@@ -558,7 +579,7 @@ export function transitionState(
   if (!state) {
     // no previous state so generate a new game
     const players = [
-      new Player("A", PlayerKind.Human, 0),
+      new Player("You", PlayerKind.Human, 0),
       new Player("B", PlayerKind.AI, 1),
       new Player("C", PlayerKind.AI, 2),
       new Player("D", PlayerKind.AI, 3),
@@ -568,7 +589,7 @@ export function transitionState(
       error: "",
       roundKind: undefined,
       discardPile: [],
-      message: `New Game! Waiting on ${players[0]}`,
+      message: `New Game! Waiting on ${players[0].name}`,
     };
     setCurrentPlayer(nextState, nextState.players[0]);
     dealCards(createDeck(), nextState.players);
@@ -672,11 +693,12 @@ export function transitionState(
     return nextState;
   }
 
-  // verify cards are of the same kind as the current round
+  // verify cards are of the same kind as the current round (or a killer/4 of a kind)
   if (
     state.roundKind &&
     getActivePlayers(state).length > 1 &&
-    cardSequenceToKind(command.cards) !== state.roundKind
+    cardSequenceToKind(command.cards) !== state.roundKind &&
+    cardSequenceToKind(command.cards) !== CardSequenceKind.FourOfAKind
   ) {
     return {
       ...deepClone(state),
@@ -736,6 +758,7 @@ export function transitionState(
   }
   const nextState: GameState = {
     ...deepClone(state),
+    roundKind: cardSequenceToKind(command.cards), //roundKind only changes here if a killer is played
     error: "",
     discardPile: [...state.discardPile],
   };

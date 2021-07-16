@@ -30,18 +30,44 @@ describe('transitionState()', () => {
       .sort(orderBy('length', false))[0];
     const newState = transitionState(
       state,
-      new Play(getCurrentPlayer(state), play));
+      new Play(getCurrentPlayer(state).name, play));
     expect(newState.error).toBeFalsy();
   });
   it('allows a player to pass', () => {
     let state = transitionState();
-    state = transitionState(state, new Play(getCurrentPlayer(state)));
+    state = transitionState(state, new Play(getCurrentPlayer(state).name));
     expect(getPassedPlayers(state).length).toBe(1);
-    state = transitionState(state, new Play(getCurrentPlayer(state)));
+    state = transitionState(state, new Play(getCurrentPlayer(state).name));
     expect(getPassedPlayers(state).length).toBe(2);
-    state = transitionState(state, new Play(getCurrentPlayer(state)));
+    state = transitionState(state, new Play(getCurrentPlayer(state).name));
     expect(getPassedPlayers(state).length).toBe(3);
-  })
+  });
+  it('allows killers to trump the current play', () => {
+    let state = transitionState();
+
+    // start the game w/ a play
+    state = transitionState(
+      state,
+      new Play(
+        getCurrentPlayer(state).name,
+        findSequences(getCurrentPlayer(state).cards)[0]));
+
+    // give the current player a killer
+    getCurrentPlayer(state).cards.push(new Card(Rank.Three));
+    getCurrentPlayer(state).cards.push(new Card(Rank.Three));
+    getCurrentPlayer(state).cards.push(new Card(Rank.Three));
+    getCurrentPlayer(state).cards.push(new Card(Rank.Three));
+
+    // play the killer
+    state = transitionState(state, new Play('B', [
+      new Card(Rank.Three),
+      new Card(Rank.Three),
+      new Card(Rank.Three),
+      new Card(Rank.Three)]));
+
+    expect(state.error).toBeFalsy();
+    expect(state.roundKind).toBe(CardSequenceKind.FourOfAKind);
+  });
 });
 
 describe('transitionStateAuto()', () => {
@@ -115,6 +141,26 @@ describe('findSequences()', () => {
 describe('compareCardSequences()', () => {
   it('knows A♥ is greater than A♠', () => {
     expect(compareCardSequences([new Card(Rank.Ace, Suit.Hearts)], [new Card(Rank.Ace, Suit.Spades)])).toBe(1);
+  });
+  it('knows how to compare pairs of fours', () => {
+    const a = [new Card(Rank.Four, Suit.Clubs), new Card(Rank.Four, Suit.Hearts)];
+    const b = [new Card(Rank.Four, Suit.Diamonds), new Card(Rank.Four, Suit.Spades)];
+    expect(compareCardSequences(a, b)).toBe(1);
+  });
+  it('ranks killers above all other play kinds', () => {
+    expect(compareCardSequences(
+      [
+        new Card(Rank.Three, Suit.Hearts),
+        new Card(Rank.Three, Suit.Diamonds),
+        new Card(Rank.Three, Suit.Clubs),
+        new Card(Rank.Three, Suit.Spades),
+      ],
+      [
+        new Card(Rank.Two),
+        new Card(Rank.Ace),
+        new Card(Rank.King),
+        new Card(Rank.Queen)
+      ])).toBe(1);
   });
 });
 

@@ -9,6 +9,7 @@ export {
   transitionState,
   transitionStateAuto,
   cardToString,
+  cardSequenceToString,
   findRuns,
   findOfAKinds,
   orderBy,
